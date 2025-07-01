@@ -1,29 +1,32 @@
 from flask import Flask, request, render_template, redirect, url_for
 from flask_mail import Mail, Message
 import os
-import mimetypes
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
-load_dotenv()  # Load environment variables from .env
+# Load environment variables from .env
+load_dotenv()
 
 app = Flask(__name__)
 
-# Mail configuration from environment variables
+# Mail configuration from environment
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')  # Your email
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # App password
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 
-# Upload configuration
+# Upload folder & allowed extensions
 UPLOAD_FOLDER = 'uploads/'
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB max
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+# Ensure uploads folder exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -35,7 +38,7 @@ def index():
 @app.route('/submit', methods=['POST'])
 def submit_form():
     try:
-        # Form fields
+        # Get form data
         first_name = request.form['first-name']
         last_name = request.form['last-name']
         dob = request.form['dob']
@@ -45,55 +48,60 @@ def submit_form():
         location = request.form['location']
         area_code = request.form['area-code']
         cover_letter = request.form['cover-letter']
-        
-        # Handle file
         resume = request.files['resume']
+
+        # Save uploaded resume
         if resume and allowed_file(resume.filename):
             filename = secure_filename(resume.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+            # Ensure uploads folder exists (again here just in case)
+            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                os.makedirs(app.config['UPLOAD_FOLDER'])
+
             resume.save(filepath)
 
-            # Compose email
+            # Prepare email
             msg = Message(
                 subject=f'New Job Application from {first_name} {last_name}',
-                sender=app.config['MAIL_USERNAME'],
-                recipients=[app.config['MAIL_USERNAME']],
-                reply_to=email
+                sender=email,  # From the applicant
+                recipients=[os.environ.get('MAIL_USERNAME')]  # To the owner
             )
-            msg.body = f'''
-New job application received:
 
-Name: {first_name} {last_name}
+            msg.body = f'''
+New Job Application Received:
+
+First Name: {first_name}
+Last Name: {last_name}
 Date of Birth: {dob}
 Gender: {gender}
 Phone: {phone}
 Email: {email}
 Location: {location}
 Area Code: {area_code}
+
 Cover Letter:
 {cover_letter}
-
-Reply to this email to contact the applicant.
             '''
 
-            mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
             with app.open_resource(filepath) as f:
-                msg.attach(filename, mimetype, f.read())
+                msg.attach(filename, "application/octet-stream", f.read())
 
             mail.send(msg)
+
+            # Optionally delete file after sending
             os.remove(filepath)
+
             return redirect(url_for('thank_you'))
 
-        return 'Invalid file or upload failed.'
+        return 'File upload failed or invalid file type.'
 
     except Exception as e:
-        return f'An error occurred: {str(e)}'
+        return f"An error occurred: {str(e)}"
 
 @app.route('/thank-you')
 def thank_you():
     return render_template('thanks.html')
 
 if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)

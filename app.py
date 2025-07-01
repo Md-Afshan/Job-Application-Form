@@ -9,19 +9,22 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Email settings (load from environment)
+# Email config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')  # Your email
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # App password
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 
-# Upload folder setup
-UPLOAD_FOLDER = 'uploads/'
+# Absolute path for upload folder
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Allowed file extensions
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
 
 def allowed_file(filename):
@@ -34,42 +37,38 @@ def index():
 @app.route('/submit', methods=['POST'])
 def submit_form():
     try:
-        # Get form data
-        first_name = request.form['first-name']
-        last_name = request.form['last-name']
-        dob = request.form['dob']
-        gender = request.form['gender']
-        phone = request.form['phone']
-        email = request.form['email']
-        location = request.form['location']
-        area_code = request.form['area-code']
-        cover_letter = request.form['cover-letter']
-        resume = request.files['resume']
+        # Ensure upload directory exists (absolute path)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-        # Validate and save resume
+        # Get form inputs
+        first_name = request.form.get('first-name')
+        last_name = request.form.get('last-name')
+        dob = request.form.get('dob')
+        gender = request.form.get('gender')
+        phone = request.form.get('phone')
+        email = request.form.get('email')
+        location = request.form.get('location')
+        area_code = request.form.get('area-code')
+        cover_letter = request.form.get('cover-letter')
+        resume = request.files.get('resume')
+
+        # File check
         if resume and allowed_file(resume.filename):
             filename = secure_filename(resume.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-            # ✅ Create uploads/ folder even if it doesn't exist (especially for Render)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-            # Save the uploaded file
             resume.save(filepath)
 
-            # Prepare the email message
-            msg = Message(
-                subject=f'New Job Application from {first_name} {last_name}',
-                sender=email,  # Applicant's email
-                recipients=[os.environ.get('MAIL_USERNAME')]  # Your email
-            )
+            # Prepare and send email
+            msg = Message(subject=f"New Application from {first_name} {last_name}",
+                          sender=email,
+                          recipients=[os.environ.get('MAIL_USERNAME')])
 
             msg.body = f'''
 New Job Application Received:
 
 First Name: {first_name}
 Last Name: {last_name}
-Date of Birth: {dob}
+DOB: {dob}
 Gender: {gender}
 Phone: {phone}
 Email: {email}
@@ -80,22 +79,21 @@ Cover Letter:
 {cover_letter}
             '''
 
-            # Attach the resume
-            with app.open_resource(filepath) as f:
+            with open(filepath, 'rb') as f:
                 msg.attach(filename, "application/octet-stream", f.read())
 
-            # Send the email
             mail.send(msg)
 
-            # Optional: delete uploaded file after sending
+            # Delete file after sending
             os.remove(filepath)
 
             return redirect(url_for('thank_you'))
 
-        return 'File upload failed or invalid file type.'
+        return "Invalid or missing file. Please upload a .pdf, .doc, or .docx file."
 
     except Exception as e:
-        return f"An error occurred: {str(e)}"
+        # Log error on screen for now
+        return f"An error occurred: {e}"
 
 @app.route('/thank-you')
 def thank_you():

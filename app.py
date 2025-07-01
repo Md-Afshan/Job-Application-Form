@@ -9,7 +9,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Mail configuration from environment
+# Email settings (load from environment)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')  # Your email
@@ -19,14 +19,10 @@ app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 
-# Upload folder & allowed extensions
+# Upload folder setup
 UPLOAD_FOLDER = 'uploads/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
-
-# Ensure uploads folder exists
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -50,22 +46,22 @@ def submit_form():
         cover_letter = request.form['cover-letter']
         resume = request.files['resume']
 
-        # Save uploaded resume
+        # Validate and save resume
         if resume and allowed_file(resume.filename):
             filename = secure_filename(resume.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-            # Ensure uploads folder exists (again here just in case)
-            if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                os.makedirs(app.config['UPLOAD_FOLDER'])
+            # ✅ Create uploads/ folder even if it doesn't exist (especially for Render)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+            # Save the uploaded file
             resume.save(filepath)
 
-            # Prepare email
+            # Prepare the email message
             msg = Message(
                 subject=f'New Job Application from {first_name} {last_name}',
-                sender=email,  # From the applicant
-                recipients=[os.environ.get('MAIL_USERNAME')]  # To the owner
+                sender=email,  # Applicant's email
+                recipients=[os.environ.get('MAIL_USERNAME')]  # Your email
             )
 
             msg.body = f'''
@@ -84,12 +80,14 @@ Cover Letter:
 {cover_letter}
             '''
 
+            # Attach the resume
             with app.open_resource(filepath) as f:
                 msg.attach(filename, "application/octet-stream", f.read())
 
+            # Send the email
             mail.send(msg)
 
-            # Optionally delete file after sending
+            # Optional: delete uploaded file after sending
             os.remove(filepath)
 
             return redirect(url_for('thank_you'))

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #161616;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+            padding: 10px;
+        }
+
+        .form-container {
+            background-color: #1d1d1d;
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .logo img {
+            width: 80px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: #ffcc00;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ffcc00;
+            border-radius: 5px;
+            background-color: #333;
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: none;
+        }
+
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ffcc00;
+            border-radius: 5px;
+            background-color: #333;
+            color: white;
+            font-size: 14px;
+            appearance: none;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background-color: white;
+            border-radius: 50%;
+            padding: 5px;
+        }
+
+        button {
+            width: 100%;
+            background-color: #00cc44;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #009933;
+        }
+
+        input[type="file"] {
+            border: none;
+            background-color: #444;
+            padding: 10px;
+        }
+
+        input[type="file"]::file-selector-button {
+            background-color: #00cc44;
+            border: none;
+            padding: 10px;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Make the form responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .form-container {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <!-- Logo at the top -->
+        <div class="logo">
+            <img src="/static/Ipsq.jpg" alt="Logo">
+        </div>
+
+        <!-- Title -->
+        <h2>Job Application Form</h2>
+
+        <!-- Form -->
+        <form id="job-application-form" action="/submit" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="first-name">First Name *</label>
+                <input type="text" id="first-name" name="first-name" placeholder="First Name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="last-name">Last Name *</label>
+                <input type="text" id="last-name" name="last-name" placeholder="Last Name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dob">Date Of Birth *</label>
+                <input type="date" id="dob" name="dob" required>
+            </div>
+
+            <div class="form-group">
+                <label for="gender">Gender *</label>
+                <select id="gender" name="gender" placeholder="Select" required>
+                    <option value="" disabled selected>Select</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <input type="text" id="phone" name="phone" placeholder="XXXXXXXXXX" maxlength="10" pattern="\d{10}" required title="Please enter a 10-digit phone number">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" placeholder="myname@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location *</label>
+                <select id="location" name="location" placeholder="Select" required>
+                    <option value="" disabled selected>Select</option>
+                    <option value="Chennai">Chennai</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="area-code">Area Code *</label>
+                <input type="text" id="area-code" name="area-code" placeholder="ex: 6000XX" maxlength="6" pattern="\d{6}" required title="Please enter a 6-digit area code">
+            </div>
+
+            <div class="form-group">
+                <label for="cover-letter">Cover Letter *</label>
+                <textarea id="cover-letter" name="cover-letter" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="resume">Upload Resume</label>
+                <input type="file" id="resume" name="resume" accept=".pdf" required>
+            </div>
+
+            <button type="submit">APPLY NOW!</button>
+            <caption><u> After Applying Click 'OK' in Alert Box and Wait </u></caption>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("job-application-form").addEventListener("submit", function(event) {
+            alert("Form submitted successfully!");
+        });
+    </script>
+</body>
+
+</html>
